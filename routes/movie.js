@@ -15,6 +15,7 @@ router.get('/film', movieController.film_list);
 router.get('/film/:id', movieController.get_film);
 router.post('/film', movieController.create_film);
 router.put('/film/:id', movieController.update_film);
+router.delete('/film/:id', movieController.delete_film);
 
 
 

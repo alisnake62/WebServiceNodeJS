@@ -469,46 +469,30 @@ exports.update_film = (req, res) => {
                             repo.delete_films_actors(req.params.id)
                             .then(() => {
                                 
-                                repo.update_actor(
-                                    {
-                                        name: req.body.name,
-                                        synopsis: req.body.synopsis,
-                                        release_year: req.body.release_year,
-                                        genre_id: req.body.genre_id,
-                                        id: req.params.id,
-                                    }
-                                )   
-                                .then(() => {
+                                // création de l'association film actors
+                                var varTemp = 0;
+                                if (!req.body.actors_id.length){
+                                    
 
-                                    // création de l'association film actors
-                                    var varTemp = 0;
-                                    if (!req.body.actors_id.length){
-                                        
+                                    // get film
+                                    repo.get_object_by_id('films', req.params.id)
+                                    .then((film) => {
 
-                                        // get film
-                                        repo.get_object_by_id('films', req.params.id)
-                                        .then((film) => {
-
-                                            //get genre
-                                            repo.get_object_by_id("genres", film.genre_id)
-                                            .then((genre) => {
-                                                delete film.genre_id;
-                                                film.genre = genre;
+                                        //get genre
+                                        repo.get_object_by_id("genres", film.genre_id)
+                                        .then((genre) => {
+                                            delete film.genre_id;
+                                            film.genre = genre;
 
 
-                                                //get actors
-                                                repo.get_actors_by_film_id(film.id)
-                                                .then((actors) => {
-                                                    film.actors = actors;
-                                                    res.json({
-                                                        success: true,
-                                                        data: film,
-                                                    });
-                                                })
-                                                .catch((err) => {
-                                                    res.status(500).json({ error: err.message });
+                                            //get actors
+                                            repo.get_actors_by_film_id(film.id)
+                                            .then((actors) => {
+                                                film.actors = actors;
+                                                res.json({
+                                                    success: true,
+                                                    data: film,
                                                 });
-
                                             })
                                             .catch((err) => {
                                                 res.status(500).json({ error: err.message });
@@ -519,68 +503,67 @@ exports.update_film = (req, res) => {
                                             res.status(500).json({ error: err.message });
                                         });
 
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).json({ error: err.message });
+                                    });
 
-                                    }
-                                    else{
+
+                                }
+                                else{
 
 
-                                        req.body.actors_id.forEach((actor_id) => {
-                                            varTemp += 1;
-                                            repo.create_films_actors(req.body.genre_id, actor_id)
-                                            .then((value) => {
-                                                if (varTemp == req.body.actors_id.length)
-                                                {
-                                                    
-                                                    // get film
-                                                    repo.get_object_by_id('films', req.params.id)
-                                                    .then((film) => {
-    
-                                                        //get genre
-                                                        repo.get_object_by_id("genres", film.genre_id)
-                                                        .then((genre) => {
-                                                            delete film.genre_id;
-                                                            film.genre = genre;
-    
-    
-                                                            //get actors
-                                                            repo.get_actors_by_film_id(film.id)
-                                                            .then((actors) => {
-                                                                film.actors = actors;
-                                                                res.json({
-                                                                    success: true,
-                                                                    data: film,
-                                                                });
-                                                            })
-                                                            .catch((err) => {
-                                                                res.status(500).json({ error: err.message });
+                                    req.body.actors_id.forEach((actor_id) => {
+                                        varTemp += 1;
+                                        repo.create_films_actors(req.body.genre_id, actor_id)
+                                        .then((value) => {
+                                            if (varTemp == req.body.actors_id.length)
+                                            {
+                                                
+                                                // get film
+                                                repo.get_object_by_id('films', req.params.id)
+                                                .then((film) => {
+
+                                                    //get genre
+                                                    repo.get_object_by_id("genres", film.genre_id)
+                                                    .then((genre) => {
+                                                        delete film.genre_id;
+                                                        film.genre = genre;
+
+
+                                                        //get actors
+                                                        repo.get_actors_by_film_id(film.id)
+                                                        .then((actors) => {
+                                                            film.actors = actors;
+                                                            res.json({
+                                                                success: true,
+                                                                data: film,
                                                             });
-    
                                                         })
                                                         .catch((err) => {
                                                             res.status(500).json({ error: err.message });
                                                         });
-    
+
                                                     })
                                                     .catch((err) => {
                                                         res.status(500).json({ error: err.message });
                                                     });
-    
-                                                }
-                                                
-                                            })
-                                            .catch((err) => {
-                                                res.status(500).json({ error: err.message });
-                                            });
+
+                                                })
+                                                .catch((err) => {
+                                                    res.status(500).json({ error: err.message });
+                                                });
+
+                                            }
+                                            
+                                        })
+                                        .catch((err) => {
+                                            res.status(500).json({ error: err.message });
                                         });
+                                    });
 
 
-                                    }
-                                    
-
-                                })
-                                .catch((err) => {
-                                    res.status(500).json({ error: err.message });
-                                });
+                                }
 
                             })
                             .catch((err) => {
@@ -602,6 +585,48 @@ exports.update_film = (req, res) => {
     })
     
 };
+
+
+exports.delete_film = (req, res) => {
+    const repo = new MovieRepository(db);
+
+    //check if id exist
+    repo.get_object_by_id('films', req.params.id) 
+    .then((result) => {
+        if (!result){
+            res.status(404).json({
+                success: false,
+                data: 'Unable to find the data requested',
+            })
+        }else{
+           
+            // suppression de l'association films actor
+            repo.delete_films_actors(req.params.id)
+            .then(() => {
+                
+                // suppression du film
+                repo.delete_object('films', req.params.id)
+                .then(() => {
+                    res.status(204)
+                        .json({
+                            success: true,
+                        });
+                })
+                .catch((err) => {
+                    res.status(500).json({ error: err.message });
+                }); 
+
+            })
+            .catch((err) => {
+                res.status(500).json({ error: err.message });
+            });
+
+        }
+    
+    })
+    
+};
+
 
 
 getResult = (result, response) => {
